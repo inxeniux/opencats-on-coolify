@@ -1,18 +1,36 @@
-FROM php:7.4-apache
+version: "3.9"
 
-RUN apt-get update && apt-get install -y \
-    git unzip curl libzip-dev libpng-dev libonig-dev libxml2-dev \
- && docker-php-ext-install mysqli pdo pdo_mysql gd mbstring xml zip \
- && a2enmod rewrite
+services:
+  db:
+    image: mysql:5.7
+    container_name: opencats-db
+    command: --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci
+    environment:
+      MYSQL_DATABASE: opencats
+      MYSQL_USER: opencats
+      MYSQL_PASSWORD: opencats
+      MYSQL_ROOT_PASSWORD: rootpass
+    volumes:
+      - db_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "127.0.0.1"]
+      interval: 10s
+      retries: 30
 
-RUN printf "<Directory /var/www/html>\nAllowOverride All\n</Directory>\n" > /etc/apache2/conf-available/opencats.conf \
- && a2enconf opencats
+  web:
+    build: .
+    container_name: opencats-web
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      CATS_DB_HOST: db
+      CATS_DB_NAME: opencats
+      CATS_DB_USER: opencats
+      CATS_DB_PASS: opencats
+    volumes:
+      - cats_files:/var/www/html/attachments
 
-WORKDIR /var/www/html
-RUN git clone --depth 1 https://github.com/opencats/OpenCATS.git . \
- && chown -R www-data:www-data /var/www/html
-
-RUN printf "upload_max_filesize=25M\npost_max_size=25M\nmemory_limit=512M\n" > /usr/local/etc/php/conf.d/uploads.ini
-
-HEALTHCHECK --interval=30s --timeout=5s --start-period=20s --retries=10 \
-  CMD curl -fsS http://127.0.0.1/ || exit 1
+volumes:
+  db_data:
+  cats_files:
