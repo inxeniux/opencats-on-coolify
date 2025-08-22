@@ -10,7 +10,6 @@ volumes:
 services:
   db:
     image: mysql:5.7
-    # OJO: Coolify puede ignorar container_name al correr, no pasa nada.
     container_name: opencats-db
     restart: unless-stopped
     command:
@@ -18,8 +17,8 @@ services:
       - --character-set-server=utf8mb4
       - --collation-server=utf8mb4_unicode_ci
     environment:
-      MYSQL_DATABASE: opencats
-      MYSQL_USER: opencats
+      MYSQL_DATABASE: "opencats"
+      MYSQL_USER: "opencats"
       MYSQL_PASSWORD: "Trapeador0925"
       MYSQL_ROOT_PASSWORD: "Trapeador0925"
       TZ: America/Mexico_City
@@ -33,9 +32,7 @@ services:
       start_period: 60s
 
   web:
-    # Si tu repo tiene Dockerfile que compila OpenCATS, deja build: .
-    # Si no, puedes cambiar por: image: opencats/opencats:latest
-    build: .
+    image: opencats/opencats:latest        # <— USAR IMAGEN OFICIAL
     container_name: opencats-web
     restart: unless-stopped
     depends_on:
@@ -52,20 +49,13 @@ services:
     networks:
       - coolify
     labels:
-      # Habilita Traefik y dile en qué red hablar con el contenedor
       - traefik.enable=true
       - traefik.docker.network=coolify
-
-      # Puerto interno del servicio (OpenCATS sirve en 80 dentro del contenedor)
       - traefik.http.services.opencats.loadbalancer.server.port=80
-
-      # Router HTTP → HTTPS (Coolify ya añade reglas si pones el dominio,
-      # pero lo dejamos explícito por si acaso)
       - traefik.http.routers.opencats.rule=Host(`opencats.inxeniux.com.mx`)
       - traefik.http.routers.opencats.entrypoints=http,https
       - traefik.http.routers.opencats.tls=true
       - traefik.http.routers.opencats.tls.certresolver=letsencrypt
-
     healthcheck:
       test: ["CMD", "wget", "-qO-", "http://127.0.0.1/"]
       interval: 5s
