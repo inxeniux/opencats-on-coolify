@@ -2,7 +2,7 @@ version: "3.8"
 
 networks:
   coolify:
-    external: true   # red del proxy de Coolify
+    external: true
 
 services:
   db:
@@ -22,50 +22,29 @@ services:
     volumes:
       - db_data:/var/lib/mysql
     healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "127.0.0.1", "-u", "root", "-pTrapeador0925"]
+      test: ["CMD","mysqladmin","ping","-h","127.0.0.1","-u","root","-pTrapeador0925"]
       interval: 5s
       timeout: 5s
       retries: 12
       start_period: 60s
-    networks:
-      - coolify
 
   web:
-    # Usas tu Dockerfile del repo
-    build: .
+    image: nginx:alpine
     container_name: opencats-web
     restart: unless-stopped
+    networks: [coolify]
+    expose:
+      - "80"
     depends_on:
       db:
         condition: service_healthy
-    environment:
-      DB_HOST: db
-      DB_NAME: opencats
-      DB_USER: opencats
-      DB_PASS: Trapeador0925
-      TZ: America/Mexico_City
-    expose:
-      - "80"
     healthcheck:
-      test: ["CMD", "wget", "-qO-", "http://127.0.0.1/"]
+      test: ["CMD","wget","-qO-","http://127.0.0.1/"]
       interval: 5s
       timeout: 5s
       retries: 12
-      start_period: 60s
-    labels:
-      traefik.enable: "true"
-      traefik.docker.network: "coolify"
-      traefik.http.routers.opencats.rule: "Host(`opencats.inxeniux.com.mx`)"
-      traefik.http.routers.opencats.entrypoints: "https"
-      traefik.http.routers.opencats.tls.certresolver: "letsencrypt"
-      traefik.http.services.opencats.loadbalancer.server.port: "80"
-      # (opcional) redirección http -> https:
-      # traefik.http.routers.opencats-http.rule: "Host(`opencats.inxeniux.com.mx`)"
-      # traefik.http.routers.opencats-http.entrypoints: "http"
-      # traefik.http.middlewares.opencats-redirect.redirectscheme.scheme: "https"
-      # traefik.http.routers.opencats-http.middlewares: "opencats-redirect"
-    networks:
-      - coolify
+      start_period: 30s
 
 volumes:
   db_data: {}
+
