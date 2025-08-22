@@ -32,7 +32,7 @@ services:
       start_period: 60s
 
   web:
-    image: opencats/opencats:latest        # <— USAR IMAGEN OFICIAL
+    build: .                     # <— construye con nuestro Dockerfile
     container_name: opencats-web
     restart: unless-stopped
     depends_on:
