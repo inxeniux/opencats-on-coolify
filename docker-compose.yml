@@ -60,10 +60,10 @@ services:
       traefik.http.routers.opencats.tls.certresolver: "letsencrypt"
       traefik.http.services.opencats.loadbalancer.server.port: "80"
       # (opcional) redirección http -> https:
-      # traefik.http.routers.opencats-http.rule: "Host(`opencats.inxeniux.com.mx`)"
-      # traefik.http.routers.opencats-http.entrypoints: "http"
-      # traefik.http.middlewares.opencats-redirect.redirectscheme.scheme: "https"
-      # traefik.http.routers.opencats-http.middlewares: "opencats-redirect"
+      traefik.http.routers.opencats-http.rule: "Host(`opencats.inxeniux.com.mx`)"
+      traefik.http.routers.opencats-http.entrypoints: "http"
+      traefik.http.middlewares.opencats-redirect.redirectscheme.scheme: "https"
+      traefik.http.routers.opencats-http.middlewares: "opencats-redirect"
     networks:
       - coolify
 
