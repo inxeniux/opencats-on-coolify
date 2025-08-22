@@ -30,7 +30,6 @@ services:
       - coolify
 
   web:
-    # usa TU Dockerfile del repo
     build: .
     restart: unless-stopped
     depends_on:
@@ -43,7 +42,7 @@ services:
       DB_PASS: Trapeador0925
       TZ: America/Mexico_City
     expose:
-      - "80"         # Traefik consumirá este puerto interno
+      - "80"
     healthcheck:
       test: ["CMD", "wget", "-qO-", "http://127.0.0.1/"]
       interval: 5s
@@ -55,12 +54,12 @@ services:
       - "traefik.docker.network=coolify"
       - "traefik.http.services.opencats.loadbalancer.server.port=80"
 
-      # HTTPS (router principal)
+      # HTTPS
       - "traefik.http.routers.opencats.rule=Host(`opencats.inxeniux.com.mx`)"
       - "traefik.http.routers.opencats.entrypoints=https"
       - "traefik.http.routers.opencats.tls.certresolver=letsencrypt"
 
-      # HTTP -> redirección a HTTPS
+      # HTTP -> HTTPS
       - "traefik.http.routers.opencats-http.rule=Host(`opencats.inxeniux.com.mx`)"
       - "traefik.http.routers.opencats-http.entrypoints=http"
       - "traefik.http.routers.opencats-http.middlewares=opencats-https-redirect"
