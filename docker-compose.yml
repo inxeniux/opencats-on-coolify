@@ -1,29 +1,6 @@
 version: "3.8"
 
 services:
-  db:
-    image: mysql:5.7
-    container_name: opencats-db
-    restart: unless-stopped
-    command:
-      - --default-authentication-plugin=mysql_native_password
-      - --character-set-server=utf8mb4
-      - --collation-server=utf8mb4_unicode_ci
-    environment:
-      MYSQL_DATABASE: opencats
-      MYSQL_USER: opencats
-      MYSQL_PASSWORD: Trapeador0925      # <= cámbiala
-      MYSQL_ROOT_PASSWORD: Trapeador0925   # <= cámbiala
-      TZ: America/Mexico_City
-    volumes:
-      - db_data:/var/lib/mysql
-    healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "127.0.0.1", "-u", "root", "-pR00tCats!123"]
-      interval: 5s
-      timeout: 5s
-      retries: 12
-      start_period: 30s
-
   web:
     build: .
     container_name: opencats-web
@@ -35,17 +12,33 @@ services:
       DB_HOST: db
       DB_NAME: opencats
       DB_USER: opencats
-      DB_PASS: Trapeador0925            # <= igual a la de arriba
+      DB_PASS: Trapeador0925        # cámbiala
       TZ: America/Mexico_City
     expose:
       - "80"
-    # (Opcional) healthcheck si tu imagen tiene curl/wget instalado:
-    # healthcheck:
-    #   test: ["CMD", "bash", "-lc", "curl -fsS http://127.0.0.1/ || wget -qO- http://127.0.0.1/ >/dev/null 2>&1"]
-    #   interval: 5s
-    #   timeout: 5s
-    #   start_period: 60s
-    #   retries: 12
+
+  db:
+    image: mysql:5.7
+    container_name: opencats-db
+    restart: unless-stopped
+    command:
+      - --default-authentication-plugin=mysql_native_password
+      - --character-set-server=utf8mb4
+      - --collation-server=utf8mb4_unicode_ci
+    environment:
+      MYSQL_DATABASE: opencats
+      MYSQL_USER: opencats
+      MYSQL_PASSWORD: Trapeador0925  # misma que arriba
+      MYSQL_ROOT_PASSWORD: Trapeador0925
+      TZ: America/Mexico_City
+    volumes:
+      - db_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "127.0.0.1", "-u", "root", "-pR00tCats!123"]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+      start_period: 30s
 
 volumes:
   db_data:
