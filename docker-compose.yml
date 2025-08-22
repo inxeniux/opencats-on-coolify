@@ -12,21 +12,23 @@ services:
     environment:
       MYSQL_DATABASE: opencats
       MYSQL_USER: opencats
-      MYSQL_PASSWORD: Trapeador0925           # <-- pon aquí la que usas
-      MYSQL_ROOT_PASSWORD: Trapeador0925    # <-- pon aquí la de root
+      MYSQL_PASSWORD: Trapeador0925
+      MYSQL_ROOT_PASSWORD: Trapeador0925
       TZ: America/Mexico_City
     volumes:
       - db_data:/var/lib/mysql
     healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "127.0.0.1", "-u", "root", "-pTU_PASS_ROOT"]
+      # usa la var de entorno y evita repetir el password en claro
+      test: ["CMD-SHELL", "mysqladmin ping -h 127.0.0.1 -uroot -p$$MYSQL_ROOT_PASSWORD || exit 1"]
       interval: 5s
       timeout: 5s
       retries: 12
       start_period: 60s
 
   web:
-    # Si tú creaste Dockerfile en el repo, deja build:. Si no, usa la imagen pública:
+    # Si construyes con tu Dockerfile:
     build: .
+    # Si prefieres imagen pública:
     # image: opencats/opencats:latest
     container_name: opencats-web
     restart: unless-stopped
@@ -37,8 +39,9 @@ services:
       DB_HOST: db
       DB_NAME: opencats
       DB_USER: opencats
-      DB_PASS: Trapeador0925                  # <-- misma que arriba
+      DB_PASS: Trapeador0925
       TZ: America/Mexico_City
+    # Importante: no publicar puertos, solo exponer 80 para Traefik
     expose:
       - "80"
     healthcheck:
@@ -47,6 +50,21 @@ services:
       timeout: 5s
       retries: 12
       start_period: 60s
+    # Labels para Traefik + Let's Encrypt
+    labels:
+      - traefik.enable=true
+      # HTTP -> redirige a HTTPS
+      - traefik.http.routers.opencats.entrypoints=http
+      - traefik.http.routers.opencats.rule=Host(`opencats.inxeniux.com.mx`)
+      - traefik.http.middlewares.opencats-https-redirect.redirectscheme.scheme=https
+      - traefik.http.routers.opencats.middlewares=opencats-https-redirect
+      # HTTPS con certificado de Let's Encrypt
+      - traefik.http.routers.opencats-secure.entrypoints=https
+      - traefik.http.routers.opencats-secure.rule=Host(`opencats.inxeniux.com.mx`)
+      - traefik.http.routers.opencats-secure.tls=true
+      - traefik.http.routers.opencats-secure.tls.certresolver=letsencrypt
+      # Puerto interno donde escucha la app
+      - traefik.http.services.opencats.loadbalancer.server.port=80
 
 volumes:
   db_data: {}
