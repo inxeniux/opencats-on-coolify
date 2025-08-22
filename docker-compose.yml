@@ -1,8 +1,13 @@
 version: "3.8"
 
+networks:
+  coolify:
+    external: true   # red del proxy de Coolify
+
 services:
   db:
     image: mysql:5.7
+    container_name: opencats-db
     restart: unless-stopped
     command:
       - --default-authentication-plugin=mysql_native_password
@@ -26,8 +31,9 @@ services:
       - coolify
 
   web:
-    # Usa tu Dockerfile (ya lo tienes)
+    # Usas tu Dockerfile del repo
     build: .
+    container_name: opencats-web
     restart: unless-stopped
     depends_on:
       db:
@@ -47,25 +53,19 @@ services:
       retries: 12
       start_period: 60s
     labels:
-      - 'traefik.enable=true'
-      - 'traefik.docker.network=coolify'
-      - 'traefik.http.services.opencats.loadbalancer.server.port=80'
-
-      # Router HTTPS (certificado LE)
-      - 'traefik.http.routers.opencats.rule=Host(`opencats.inxeniux.com.mx`)'
-      - 'traefik.http.routers.opencats.entrypoints=https'
-      - 'traefik.http.routers.opencats.tls=true'
-      - 'traefik.http.routers.opencats.tls.certresolver=letsencrypt'
-
-      # Router HTTP (para challenge y/o 80)
-      - 'traefik.http.routers.opencats-http.rule=Host(`opencats.inxeniux.com.mx`)'
-      - 'traefik.http.routers.opencats-http.entrypoints=http'
+      traefik.enable: "true"
+      traefik.docker.network: "coolify"
+      traefik.http.routers.opencats.rule: "Host(`opencats.inxeniux.com.mx`)"
+      traefik.http.routers.opencats.entrypoints: "https"
+      traefik.http.routers.opencats.tls.certresolver: "letsencrypt"
+      traefik.http.services.opencats.loadbalancer.server.port: "80"
+      # (opcional) redirección http -> https:
+      # traefik.http.routers.opencats-http.rule: "Host(`opencats.inxeniux.com.mx`)"
+      # traefik.http.routers.opencats-http.entrypoints: "http"
+      # traefik.http.middlewares.opencats-redirect.redirectscheme.scheme: "https"
+      # traefik.http.routers.opencats-http.middlewares: "opencats-redirect"
     networks:
       - coolify
 
 volumes:
-  db_data: {}
-
-networks:
-  coolify:
-    external: trueopencats-redirect.redirectscheme.scheme=https
+  db_data: {}direct.redirectscheme.scheme=https
