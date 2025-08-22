@@ -1,16 +1,8 @@
 version: "3.8"
 
-networks:
-  coolify:
-    external: true
-
-volumes:
-  db_data: {}
-
 services:
   db:
     image: mysql:5.7
-    container_name: opencats-db
     restart: unless-stopped
     command:
       - --default-authentication-plugin=mysql_native_password
@@ -19,24 +11,22 @@ services:
     environment:
       MYSQL_DATABASE: opencats
       MYSQL_USER: opencats
-      MYSQL_PASSWORD: Trapeador0925
-      MYSQL_ROOT_PASSWORD: Trapeador0925
+      MYSQL_PASSWORD: Trapeador0925         # <- tu pass
+      MYSQL_ROOT_PASSWORD: Trapeador0925    # <- tu pass de root
       TZ: America/Mexico_City
     volumes:
       - db_data:/var/lib/mysql
     healthcheck:
-      test: ["CMD-SHELL", "mysqladmin ping -h 127.0.0.1 -uroot -p$$MYSQL_ROOT_PASSWORD || exit 1"]
+      test: ["CMD", "mysqladmin", "ping", "-h", "127.0.0.1", "-u", "root", "-pTrapeador0925"]
       interval: 5s
       timeout: 5s
       retries: 12
       start_period: 60s
-    networks:
-      - coolify
 
   web:
+    # Si tienes Dockerfile en el repo, déjalo. Si no, descomenta la imagen pública.
     build: .
     # image: opencats/opencats:latest
-    container_name: opencats-web
     restart: unless-stopped
     depends_on:
       db:
@@ -45,7 +35,7 @@ services:
       DB_HOST: db
       DB_NAME: opencats
       DB_USER: opencats
-      DB_PASS: Trapeador0925
+      DB_PASS: Trapeador0925                # <- misma que arriba
       TZ: America/Mexico_City
     expose:
       - "80"
@@ -56,26 +46,24 @@ services:
       retries: 12
       start_period: 60s
 
+    # === Labels Traefik: crean routers + piden Let's Encrypt ===
     labels:
       - traefik.enable=true
-      - traefik.docker.network=coolify
 
-      # Servicio interno del contenedor
+      # Router HTTP (escucha en :80 y redirige a HTTPS)
+      - traefik.http.routers.opencats.entrypoints=http
+      - traefik.http.routers.opencats.rule=Host(`opencats.inxeniux.com.mx`)
+      - traefik.http.middlewares.opencats-https-redirect.redirectscheme.scheme=https
+      - traefik.http.routers.opencats.middlewares=opencats-https-redirect
+
+      # Router HTTPS (certificado con Let's Encrypt)
+      - traefik.http.routers.opencats-secure.entrypoints=https
+      - traefik.http.routers.opencats-secure.rule=Host(`opencats.inxeniux.com.mx`)
+      - traefik.http.routers.opencats-secure.tls=true
+      - traefik.http.routers.opencats-secure.tls.certresolver=letsencrypt
+
+      # Puerto interno del contenedor que Traefik debe enviar (80)
       - traefik.http.services.opencats.loadbalancer.server.port=80
 
-      # --- Router HTTPS (Let's Encrypt)
-      - traefik.http.routers.opencats.rule=Host(`opencats.inxeniux.com.mx`)
-      - traefik.http.routers.opencats.entrypoints=https
-      - traefik.http.routers.opencats.tls=true
-      - traefik.http.routers.opencats.tls.certresolver=letsencrypt
-      - traefik.http.routers.opencats.service=opencats
-
-      # --- Router HTTP con redirección a HTTPS
-      - traefik.http.routers.opencats-http.rule=Host(`opencats.inxeniux.com.mx`)
-      - traefik.http.routers.opencats-http.entrypoints=http
-      - traefik.http.routers.opencats-http.middlewares=opencats-redirect
-      - traefik.http.routers.opencats-http.service=opencats
-      - traefik.http.middlewares.opencats-redirect.redirectscheme.scheme=https
-
-    networks:
-      - coolify
+volumes:
+  db_data: {}
