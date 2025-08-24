@@ -1,30 +1,39 @@
 # Dockerfile
 FROM php:7.4-apache
 
-# Paquetes del sistema que usa OpenCATS (y el indexado de CVs)
+# Paquetes del sistema (incluye utilerías de indexado)
 RUN apt-get update && apt-get install -y \
     git unzip curl \
     antiword poppler-utils html2text unrtf \
     libxml2-dev \
  && rm -rf /var/lib/apt/lists/*
 
-# Extensiones PHP que OpenCATS usa
+# Extensiones PHP necesarias
 RUN docker-php-ext-install mysqli \
- && docker-php-ext-install soap || true   # SOAP es opcional
+ && docker-php-ext-install soap || true
 
-# Activar módulos de Apache que OpenCATS necesita
+# Activa módulos de Apache
 RUN a2enmod rewrite headers
 
-# Copia el código de la app al document root
-# (si tu código no está en la raíz, ajusta la ruta del COPY)
-COPY . /var/www/html
+# Trabajaremos en /var/www/html
+WORKDIR /var/www/html
 
-# Instalar Composer y dependencias de PHP (crea vendor/)
+# --- DESCARGA DEL CÓDIGO DE OPENCATS ---
+# Puedes fijar una rama o tag si quieres; por ahora master (o main).
+ARG OPENCATS_REPO=https://github.com/opencats/OpenCATS.git
+ARG OPENCATS_REF=master
+RUN rm -rf /var/www/html/* \
+ && git clone --depth 1 --branch ${OPENCATS_REF} ${OPENCATS_REPO} /tmp/opencats \
+ && rsync -a /tmp/opencats/ /var/www/html/ \
+ && rm -rf /tmp/opencats/.git
+
+# Composer (genera vendor/)
 RUN curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer \
- && COMPOSER_ALLOW_SUPERUSER=1 composer install --no-dev --prefer-dist -o --working-dir=/var/www/html
+ && COMPOSER_ALLOW_SUPERUSER=1 composer install --no-dev --prefer-dist -o
 
-# Permisos correctos para Apache
-RUN chown -R www-data:www-data /var/www/html
+# Asegura carpetas persistentes y permisos
+RUN mkdir -p /var/www/html/attachments /var/www/html/careerportal \
+ && chown -R www-data:www-data /var/www/html
 
 # Healthcheck simple
 HEALTHCHECK --interval=30s --timeout=5s --retries=10 CMD curl -fsS http://localhost/ || exit 1
