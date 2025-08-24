@@ -4,12 +4,13 @@ services:
   web:
     build:
       context: .
-      # sin args ni environment aquí
     ports:
-      - "${HOST_HTTP_PORT:-8088}:80"   # mapea el puerto desde Coolify
+      - "${HOST_HTTP_PORT:-8088}:80"   # acceso directo por IP:8088 -> contenedor:80
     depends_on:
       - db
     restart: unless-stopped
+    networks:
+      - coolify                       # << importante
 
   db:
     image: mysql:5.7
@@ -18,10 +19,16 @@ services:
       MYSQL_USER: ${MYSQL_USER}
       MYSQL_PASSWORD: ${MYSQL_PASSWORD}
       MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
-    command: --character-set-server=utf8 --collation-server=utf8_general_ci
     volumes:
       - db_data:/var/lib/mysql
     restart: unless-stopped
+    networks:
+      - coolify                       # << importante
 
 volumes:
   db_data:
+
+networks:
+  coolify:
+    external: true
+    name: coolify
