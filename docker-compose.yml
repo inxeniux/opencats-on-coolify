@@ -1,44 +1,52 @@
-version: "3.8"
+version: "3.9"
 
 services:
+  db:
+    image: mariadb:10.6
+    restart: unless-stopped
+    environment:
+      MYSQL_DATABASE: opencats
+      MYSQL_USER: opencats
+      MYSQL_PASSWORD: opencats
+      MYSQL_ROOT_PASSWORD: change_me # <-- cámbiala
+    volumes:
+      - db_data:/var/lib/mysql
+    networks:
+      - internal
+
   web:
+    # Construye usando tu Dockerfile (el que instala PHP 7.4, mysqli, soap y clona OpenCATS)
     build:
       context: .
+      dockerfile: Dockerfile
     depends_on:
       - db
     restart: unless-stopped
+    # Si necesitas tz:
     environment:
-      MYSQL_DATABASE: ${MYSQL_DATABASE}
-      MYSQL_USER: ${MYSQL_USER}
-      MYSQL_PASSWORD: ${MYSQL_PASSWORD}
+      TZ: UTC
     networks:
-      - coolify-infra
+      - internal
+      - coolify
     labels:
-      - "traefik.enable=true"
-      - "traefik.docker.network=coolify-infra"
-      - "traefik.http.routers.opencats.rule=Host(`opencats.inxeniux.com.mx`)"
-      - "traefik.http.routers.opencats.entrypoints=web,websecure"
-      - "traefik.http.routers.opencats.tls=true"
-      - "traefik.http.routers.opencats.service=opencats"
-      - "traefik.http.services.opencats.loadbalancer.server.port=80"
-
-  db:
-    image: mysql:5.7
-    restart: unless-stopped
-    environment:
-      MYSQL_DATABASE: ${MYSQL_DATABASE}
-      MYSQL_USER: ${MYSQL_USER}
-      MYSQL_PASSWORD: ${MYSQL_PASSWORD}
-      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
-    volumes:
-      - opencats_db:/var/lib/mysql
-    networks:
-      - coolify-infra
+      # ----- Traefik (descomenta/ajusta si NO usas la UI de Coolify para el dominio) -----
+      - traefik.enable=true
+      - traefik.docker.network=coolify
+      - traefik.http.routers.opencats.rule=Host(`opencats.inxeniux.com.mx`)
+      - traefik.http.routers.opencats.entrypoints=web # HTTP; agrega websecure + tls si ya tienes ACME listo
+      - traefik.http.services.opencats.loadbalancer.server.port=80
+      # - traefik.http.routers.opencats-secure.rule=Host(`opencats.inxeniux.com.mx`)
+      # - traefik.http.routers.opencats-secure.entrypoints=websecure
+      # - traefik.http.routers.opencats-secure.tls=true
+      # - traefik.http.routers.opencats-secure.tls.certresolver=letsencrypt
+      # -------------------------------------------------------------------------------
 
 volumes:
-  opencats_db:
+  db_data:
 
 networks:
-  coolify-infra:
+  internal:
+    internal: true
+  coolify:
     external: true
-    name: coolify-infra
+    name: coolify
