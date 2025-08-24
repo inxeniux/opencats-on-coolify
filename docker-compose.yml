@@ -25,3 +25,8 @@ services:
 
 volumes:
   opencats_db:
+
+networks:
+  coolify:
+    external: true
+    name: coolify
