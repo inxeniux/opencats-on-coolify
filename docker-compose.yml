@@ -6,30 +6,41 @@ services:
       context: .
       dockerfile: Dockerfile
       args:
-        OPENCATS_REPO: ${OPENCATS_REPO}
-        OPENCATS_REF: ${OPENCATS_REF}
-    container_name: opencats-web
+        OPENCATS_REF: ${OPENCATS_REF:-master}
+        OPENCATS_REPO: ${OPENCATS_REPO:-https://github.com/opencats/OpenCATS.git}
+    container_name: opencats_web
+    ports:
+      - "${OPENCATS_HTTP_PORT:-8080}:80"
+    environment:
+      # Estas variables solo ayudan durante el instalador web
+      - CATS_DB_HOST=db
+      - CATS_DB_NAME=${DB_NAME:-opencats}
+      - CATS_DB_USER=${DB_USER:-opencats}
+      - CATS_DB_PASS=${DB_PASSWORD:-opencats}
     depends_on:
       - db
-    ports:
-      - "8080:80"
-    environment:
-      # No son obligatorias para OpenCATS, pero útiles si haces healthchecks o scripts
-      APP_ENV: production
     volumes:
-      - opencats-www:/var/www/html
+      # Persiste adjuntos/subidas de OpenCATS
+      - opencats_data:/var/www/html/attachments
+    restart: unless-stopped
 
   db:
-    image: mariadb:10.6
-    container_name: opencats-db
+    image: mariadb:10.5
+    container_name: opencats_db
     environment:
-      MYSQL_DATABASE: ${MYSQL_DATABASE}
-      MYSQL_USER: ${MYSQL_USER}
-      MYSQL_PASSWORD: ${MYSQL_PASSWORD}
-      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      - MARIADB_ROOT_PASSWORD=${DB_ROOT_PASSWORD:-rootpass}
+      - MARIADB_DATABASE=${DB_NAME:-opencats}
+      - MARIADB_USER=${DB_USER:-opencats}
+      - MARIADB_PASSWORD=${DB_PASSWORD:-opencats}
     volumes:
-      - opencats-db:/var/lib/mysql
+      - mysql_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-uroot", "-p${DB_ROOT_PASSWORD:-rootpass}"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    restart: unless-stopped
 
 volumes:
-  opencats-db:
-  opencats-www:
+  mysql_data:
+  opencats_data:
