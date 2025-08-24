@@ -7,29 +7,21 @@ services:
     depends_on:
       - db
     restart: unless-stopped
-    # Puedes dejar esta línea para pruebas por IP: http://TU_IP:8088/
-    ports:
-      - "${HOST_HTTP_PORT:-8088}:80"
-    networks:
-      - coolify
+    environment:
+      MYSQL_DATABASE: ${MYSQL_DATABASE}
+      MYSQL_USER: ${MYSQL_USER}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD}
+    # ← sin "ports"
 
   db:
     image: mysql:5.7
-    restart: unless-stopped
     environment:
       MYSQL_DATABASE: ${MYSQL_DATABASE}
       MYSQL_USER: ${MYSQL_USER}
       MYSQL_PASSWORD: ${MYSQL_PASSWORD}
       MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
     volumes:
-      - db-data:/var/lib/mysql
-    networks:
-      - coolify
+      - opencats_db:/var/lib/mysql
 
 volumes:
-  db-data:
-
-networks:
-  coolify:
-    external: true
-    name: coolify
+  opencats_db:
