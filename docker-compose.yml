@@ -4,41 +4,30 @@ services:
   web:
     build:
       context: .
-    ports:
-      - "${HOST_HTTP_PORT:-8088}:80"   # acceso directo por IP:8088 (útil para probar)
     depends_on:
       - db
     restart: unless-stopped
+    # Puedes dejar esta línea para pruebas por IP: http://TU_IP:8088/
+    ports:
+      - "${HOST_HTTP_PORT:-8088}:80"
     networks:
       - coolify
-    labels:
-      - traefik.enable=true
-      - traefik.docker.network=coolify
-      # Router HTTP
-      - traefik.http.routers.opencats.rule=Host(`opencats.inxeniux.com.mx`)
-      - traefik.http.routers.opencats.entrypoints=web
-      - traefik.http.services.opencats.loadbalancer.server.port=80
-      # Router HTTPS (si tienes TLS automático activado en Coolify)
-      - traefik.http.routers.opencats-sec.rule=Host(`opencats.inxeniux.com.mx`)
-      - traefik.http.routers.opencats-sec.entrypoints=websecure
-      - traefik.http.routers.opencats-sec.tls=true
-      - traefik.http.routers.opencats-sec.tls.certresolver=letsencrypt
 
   db:
     image: mysql:5.7
+    restart: unless-stopped
     environment:
       MYSQL_DATABASE: ${MYSQL_DATABASE}
       MYSQL_USER: ${MYSQL_USER}
       MYSQL_PASSWORD: ${MYSQL_PASSWORD}
       MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
     volumes:
-      - db_data:/var/lib/mysql
-    restart: unless-stopped
+      - db-data:/var/lib/mysql
     networks:
       - coolify
 
 volumes:
-  db_data:
+  db-data:
 
 networks:
   coolify:
