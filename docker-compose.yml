@@ -1,52 +1,28 @@
-version: "3.9"
-
 services:
-  db:
-    image: mariadb:10.6
-    restart: unless-stopped
-    environment:
-      MYSQL_DATABASE: opencats
-      MYSQL_USER: opencats
-      MYSQL_PASSWORD: opencats
-      MYSQL_ROOT_PASSWORD: change_me # <-- cámbiala
-    volumes:
-      - db_data:/var/lib/mysql
-    networks:
-      - internal
-
   web:
-    # Construye usando tu Dockerfile (el que instala PHP 7.4, mysqli, soap y clona OpenCATS)
-    build:
-      context: .
-      dockerfile: Dockerfile
-    depends_on:
-      - db
-    restart: unless-stopped
-    # Si necesitas tz:
-    environment:
-      TZ: UTC
+    # ...
     networks:
-      - internal
+      - ss4cko8gk0go880ko8sgkkgs_internal
       - coolify
     labels:
-      # ----- Traefik (descomenta/ajusta si NO usas la UI de Coolify para el dominio) -----
       - traefik.enable=true
       - traefik.docker.network=coolify
-      - traefik.http.routers.opencats.rule=Host(`opencats.inxeniux.com.mx`)
-      - traefik.http.routers.opencats.entrypoints=web # HTTP; agrega websecure + tls si ya tienes ACME listo
       - traefik.http.services.opencats.loadbalancer.server.port=80
-      # - traefik.http.routers.opencats-secure.rule=Host(`opencats.inxeniux.com.mx`)
-      # - traefik.http.routers.opencats-secure.entrypoints=websecure
-      # - traefik.http.routers.opencats-secure.tls=true
-      # - traefik.http.routers.opencats-secure.tls.certresolver=letsencrypt
-      # -------------------------------------------------------------------------------
 
-volumes:
-  db_data:
+      # HTTP (opcional, sólo para redirigir)
+      - traefik.http.routers.opencats.rule=Host(`opencats.inxeniux.com.mx`)
+      - traefik.http.routers.opencats.entrypoints=http
+      - traefik.http.middlewares.opencats-redirect.redirectscheme.scheme=https
+      - traefik.http.routers.opencats.middlewares=opencats-redirect
+
+      # HTTPS
+      - traefik.http.routers.opencats-secure.rule=Host(`opencats.inxeniux.com.mx`)
+      - traefik.http.routers.opencats-secure.entrypoints=https
+      - traefik.http.routers.opencats-secure.tls=true
+      - traefik.http.routers.opencats-secure.tls.certresolver=coolify  # o el que tengas en tu proxy
 
 networks:
-  internal:
-    internal: true
+  ss4cko8gk0go880ko8sgkkgs_internal:
+    driver: bridge
   coolify:
     external: true
-    name: coolify
