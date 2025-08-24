@@ -1,22 +1,18 @@
-version: "3.9"
+version: "3.8"
 
 services:
   web:
     build:
       context: .
-      dockerfile: Dockerfile
       args:
         OPENCATS_REPO: ${OPENCATS_REPO}
         OPENCATS_REF: ${OPENCATS_REF}
+    # Cambia el puerto público aquí:
+    ports:
+      - "${HOST_HTTP_PORT:-8088}:80"
     depends_on:
       - db
-    ports:
-      - "8080:80"   # En Coolify puedes ajustar el mapeo/puerto público
-    networks:
-      - opencats
     restart: unless-stopped
-    volumes:
-      - opencats_uploads:/var/www/html/attachments
 
   db:
     image: mysql:5.7
@@ -25,16 +21,10 @@ services:
       MYSQL_USER: ${MYSQL_USER}
       MYSQL_PASSWORD: ${MYSQL_PASSWORD}
       MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
-    command: --default-authentication-plugin=mysql_native_password
+    command: --character-set-server=utf8 --collation-server=utf8_general_ci
     volumes:
       - db_data:/var/lib/mysql
-    networks:
-      - opencats
     restart: unless-stopped
-
-networks:
-  opencats:
 
 volumes:
   db_data:
-  opencats_uploads:
