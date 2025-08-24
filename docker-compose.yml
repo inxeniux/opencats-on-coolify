@@ -4,12 +4,9 @@ services:
   web:
     build:
       context: .
-      args:
-        OPENCATS_REPO: ${OPENCATS_REPO}
-        OPENCATS_REF: ${OPENCATS_REF}
-    # Cambia el puerto público aquí:
+      # NO pasamos args desde Coolify; usan los defaults del Dockerfile
     ports:
-      - "${HOST_HTTP_PORT:-8088}:80"
+      - "${HOST_HTTP_PORT:-8088}:80"   # <- cambiarás el puerto desde Coolify
     depends_on:
       - db
     restart: unless-stopped
