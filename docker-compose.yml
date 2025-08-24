@@ -11,10 +11,19 @@ services:
       MYSQL_DATABASE: ${MYSQL_DATABASE}
       MYSQL_USER: ${MYSQL_USER}
       MYSQL_PASSWORD: ${MYSQL_PASSWORD}
-    # ← sin "ports"
+    networks:
+      - coolify
+    labels:
+      - "traefik.enable=true"
+      - "traefik.docker.network=coolify"
+      - "traefik.http.services.opencats.loadbalancer.server.port=80"
+      - "traefik.http.routers.opencats.rule=Host(`opencats.inxeniux.com.mx`)"
+      - "traefik.http.routers.opencats.entrypoints=web,websecure"
+      - "traefik.http.routers.opencats.tls=true"
 
   db:
     image: mysql:5.7
+    restart: unless-stopped
     environment:
       MYSQL_DATABASE: ${MYSQL_DATABASE}
       MYSQL_USER: ${MYSQL_USER}
@@ -22,6 +31,8 @@ services:
       MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
     volumes:
       - opencats_db:/var/lib/mysql
+    networks:
+      - coolify
 
 volumes:
   opencats_db:
