@@ -1,4 +1,4 @@
-version: "3.8"
+version: "3.9"
 
 services:
   web:
@@ -6,41 +6,35 @@ services:
       context: .
       dockerfile: Dockerfile
       args:
-        OPENCATS_REF: ${OPENCATS_REF:-master}
-        OPENCATS_REPO: ${OPENCATS_REPO:-https://github.com/opencats/OpenCATS.git}
-    container_name: opencats_web
-    ports:
-      - "${OPENCATS_HTTP_PORT:-8080}:80"
-    environment:
-      # Estas variables solo ayudan durante el instalador web
-      - CATS_DB_HOST=db
-      - CATS_DB_NAME=${DB_NAME:-opencats}
-      - CATS_DB_USER=${DB_USER:-opencats}
-      - CATS_DB_PASS=${DB_PASSWORD:-opencats}
+        OPENCATS_REPO: ${OPENCATS_REPO}
+        OPENCATS_REF: ${OPENCATS_REF}
     depends_on:
       - db
-    volumes:
-      # Persiste adjuntos/subidas de OpenCATS
-      - opencats_data:/var/www/html/attachments
+    ports:
+      - "8080:80"   # En Coolify puedes ajustar el mapeo/puerto público
+    networks:
+      - opencats
     restart: unless-stopped
+    volumes:
+      - opencats_uploads:/var/www/html/attachments
 
   db:
-    image: mariadb:10.5
-    container_name: opencats_db
+    image: mysql:5.7
     environment:
-      - MARIADB_ROOT_PASSWORD=${DB_ROOT_PASSWORD:-rootpass}
-      - MARIADB_DATABASE=${DB_NAME:-opencats}
-      - MARIADB_USER=${DB_USER:-opencats}
-      - MARIADB_PASSWORD=${DB_PASSWORD:-opencats}
+      MYSQL_DATABASE: ${MYSQL_DATABASE}
+      MYSQL_USER: ${MYSQL_USER}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD}
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+    command: --default-authentication-plugin=mysql_native_password
     volumes:
-      - mysql_data:/var/lib/mysql
-    healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-uroot", "-p${DB_ROOT_PASSWORD:-rootpass}"]
-      interval: 10s
-      timeout: 5s
-      retries: 10
+      - db_data:/var/lib/mysql
+    networks:
+      - opencats
     restart: unless-stopped
 
+networks:
+  opencats:
+
 volumes:
-  mysql_data:
-  opencats_data:
+  db_data:
+  opencats_uploads:
