@@ -1,52 +1,35 @@
 version: "3.8"
 
-networks:
-  coolify:
-    external: true  # red del proxy de Coolify
-
-volumes:
-  db_data:
-  opencats_attachments:
-  opencats_careerportal:
-
 services:
-  db:
-    image: mysql:5.7
-    container_name: opencats-db
-    restart: unless-stopped
-    environment:
-      MYSQL_DATABASE: opencats
-      MYSQL_USER: opencats
-      MYSQL_PASSWORD: Trapeador0925
-      MYSQL_ROOT_PASSWORD: Trapeador0925
-      TZ: America/Mexico_City
-    networks:
-      - coolify
-    volumes:
-      - db_data:/var/lib/mysql
-    healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "127.0.0.1", "-u", "root", "-pTrapeador0925"]
-      interval: 5s
-      timeout: 5s
-      retries: 12
-      start_period: 60s
-
   web:
-    build: .                 # <- AHORA se construye desde el Dockerfile
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        OPENCATS_REPO: ${OPENCATS_REPO}
+        OPENCATS_REF: ${OPENCATS_REF}
     container_name: opencats-web
     depends_on:
-      db:
-        condition: service_healthy
-    networks:
-      - coolify
-    # No montamos el código como volumen para NO tapar /vendor
-    # Sólo persistimos lo que hace falta:
+      - db
+    ports:
+      - "8080:80"
+    environment:
+      # No son obligatorias para OpenCATS, pero útiles si haces healthchecks o scripts
+      APP_ENV: production
     volumes:
-      - opencats_attachments:/var/www/html/attachments
-      - opencats_careerportal:/var/www/html/careerportal
-    healthcheck:
-      test: ["CMD", "curl", "-fsS", "http://localhost/"]
-      interval: 10s
-      timeout: 5s
-      retries: 12
-      start_period: 30s
+      - opencats-www:/var/www/html
+
+  db:
+    image: mariadb:10.6
+    container_name: opencats-db
+    environment:
+      MYSQL_DATABASE: ${MYSQL_DATABASE}
+      MYSQL_USER: ${MYSQL_USER}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD}
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+    volumes:
+      - opencats-db:/var/lib/mysql
+
+volumes:
+  opencats-db:
+  opencats-www:
