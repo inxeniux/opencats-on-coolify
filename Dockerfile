@@ -1,3 +1,4 @@
+cat > Dockerfile <<'EOF'
 # Etapa para obtener composer
 FROM composer:2 AS composer
 
@@ -36,3 +37,4 @@ RUN chown -R www-data:www-data /var/www/html \
   && find /var/www/html -type f -exec chmod 644 {} \;
 
 HEALTHCHECK CMD curl -fsS http://127.0.0.1/ || exit 1
+EOF
