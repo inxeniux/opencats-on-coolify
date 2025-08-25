@@ -8,13 +8,19 @@ ENV COMPOSER_ALLOW_SUPERUSER=1 \
     APACHE_DOCUMENT_ROOT=/var/www/html
 
 # Paquetes del sistema y extensiones PHP requeridas por OpenCATS
-RUN apt-get update && apt-get install -y \
+RUN set -eux; \
+  apt-get update && apt-get install -y \
       git unzip rsync curl \
       antiword poppler-utils html2text unrtf \
       libxml2-dev libzip-dev libicu-dev \
-  && docker-php-ext-install mysqli soap zip intl \
+      libfreetype6-dev libjpeg62-turbo-dev libpng-dev \  # para gd
+      libldap2-dev \                                     # para ldap
+  && docker-php-ext-configure gd --with-freetype --with-jpeg \
+  && docker-php-ext-configure ldap --with-libdir=lib/x86_64-linux-gnu/ \
+  && docker-php-ext-install -j"$(nproc)" gd mysqli soap zip intl ldap \
   && a2enmod rewrite headers \
-  && echo '<Directory /var/www/html/>\nAllowOverride All\nRequire all granted\n</Directory>' > /etc/apache2/conf-available/opencats.conf \
+  && printf '<Directory /var/www/html/>\nAllowOverride All\nRequire all granted\n</Directory>\n' \
+       > /etc/apache2/conf-available/opencats.conf \
   && a2enconf opencats \
   && rm -rf /var/lib/apt/lists/*
 
@@ -30,16 +36,9 @@ RUN rm -rf /var/www/html/* \
 COPY --from=composer /usr/bin/composer /usr/bin/composer
 RUN composer install --no-dev --prefer-dist --no-interaction --no-progress
 
-# --- FIX rutas JS del instalador ---
-RUN set -eux; \
-    mkdir -p /var/www/html/install; \
-    ln -sf /var/www/html/js/install.js  /var/www/html/install/install.js; \
-    ln -sf /var/www/html/js/lib.js      /var/www/html/lib.js; \
-    ln -sf /var/www/html/js/subModal.js /var/www/html/subModal.js
-
 # Permisos y healthcheck
 RUN chown -R www-data:www-data /var/www/html \
   && find /var/www/html -type d -exec chmod 755 {} \; \
   && find /var/www/html -type f -exec chmod 644 {} \;
 
-HEALTHCHECK CMD curl -fsS http://127.0.0.1/ || exit 1
+HEALTHCHECK CMD curl -fsS http://127.0.0.1/ || exit 1.0.1/ || exit 1
