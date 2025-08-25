@@ -28,21 +28,22 @@ services:
     depends_on:
       db:
         condition: service_healthy
-    # si necesitas TZ u otras vars de PHP/Apache, añádelas aquí
     labels:
       - traefik.enable=true
       - traefik.docker.network=coolify
 
-      # Router HTTP -> redirección a HTTPS
+      # Router HTTP -> redirección a HTTPS (entrypoint correcto en Coolify)
       - traefik.http.routers.opencats.rule=Host(`opencats.inxeniux.com.mx`)
-      - traefik.http.routers.opencats.entrypoints=http
+      - traefik.http.routers.opencats.entrypoints=web
       - traefik.http.routers.opencats.middlewares=opencats-redirect
       - traefik.http.routers.opencats.service=opencats
       - traefik.http.middlewares.opencats-redirect.redirectscheme.scheme=https
+      - traefik.http.middlewares.opencats-redirect.redirectscheme.permanent=true
 
-      # Router HTTPS con Let's Encrypt (httpChallenge en entrypoint http)
+      # Router HTTPS (entrypoint correcto + TLS)
       - traefik.http.routers.opencats-sec.rule=Host(`opencats.inxeniux.com.mx`)
-      - traefik.http.routers.opencats-sec.entrypoints=https
+      - traefik.http.routers.opencats-sec.entrypoints=websecure
+      - traefik.http.routers.opencats-sec.tls=true
       - traefik.http.routers.opencats-sec.tls.certresolver=letsencrypt
       - traefik.http.routers.opencats-sec.service=opencats
 
@@ -55,7 +56,6 @@ services:
       timeout: 5s
       retries: 10
 
-    # Persistencia de adjuntos/subidas (opcional pero recomendable)
     volumes:
       - attachments:/var/www/html/attachments
       - uploads:/var/www/html/upload
@@ -67,11 +67,9 @@ services:
       - app_internal
 
 networks:
-  # Red que usa Traefik (ya existe)
   coolify:
     external: true
     name: coolify
-  # Redes de la app (se crean por proyecto)
   app:
     driver: bridge
   app_internal:
