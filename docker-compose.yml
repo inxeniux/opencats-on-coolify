@@ -1,3 +1,4 @@
+cat > docker-compose.yml <<'EOF'
 version: "3.9"
 
 services:
@@ -32,7 +33,7 @@ services:
       - traefik.enable=true
       - traefik.docker.network=coolify
 
-      # Router HTTP -> redirección a HTTPS (entrypoint correcto en Coolify)
+      # HTTP -> redirige a HTTPS
       - traefik.http.routers.opencats.rule=Host(`opencats.inxeniux.com.mx`)
       - traefik.http.routers.opencats.entrypoints=web
       - traefik.http.routers.opencats.middlewares=opencats-redirect
@@ -40,7 +41,7 @@ services:
       - traefik.http.middlewares.opencats-redirect.redirectscheme.scheme=https
       - traefik.http.middlewares.opencats-redirect.redirectscheme.permanent=true
 
-      # Router HTTPS (entrypoint correcto + TLS)
+      # HTTPS
       - traefik.http.routers.opencats-sec.rule=Host(`opencats.inxeniux.com.mx`)
       - traefik.http.routers.opencats-sec.entrypoints=websecure
       - traefik.http.routers.opencats-sec.tls=true
@@ -79,3 +80,4 @@ volumes:
   db_data:
   attachments:
   uploads:
+EOF
